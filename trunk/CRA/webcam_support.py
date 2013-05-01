@@ -32,7 +32,8 @@ class OpenCVQImage(QtGui.QImage):
 
 class CameraDevice(QtCore.QObject):
 
-    _DEFAULT_FPS = 50
+    _DEFAULT_FPS = 20.0
+
 
     newFrame = QtCore.pyqtSignal(cv.iplimage)
 
@@ -43,17 +44,24 @@ class CameraDevice(QtCore.QObject):
         self.mirrored = mirrored
 
         self._cameraDevice = cv.CaptureFromCAM(cameraId)
+        cv.SetCaptureProperty(self._cameraDevice, cv.CV_CAP_PROP_FPS, self._DEFAULT_FPS)
 
         self._timer = QtCore.QTimer(self)
         self._timer.timeout.connect(self._queryFrame)
-        self._timer.setInterval(1000/self.fps)
-
+        self._timer.setInterval(1000/self._DEFAULT_FPS)#self.fps)
+    
         self.paused = False
         self.record = record
-        self.name = "out2.avi"
+        self.name = "out3.avi"
+            
+    def setRecord(self, record) :
+        self.record = record
+        self.time = time.clock()
+        
+        # TODO fuite memoire ?
         if record :
             self.create_writer(fps=self._DEFAULT_FPS, fname=self.name)
-            
+
 
     @QtCore.pyqtSlot()
     def _queryFrame(self):
@@ -64,13 +72,14 @@ class CameraDevice(QtCore.QObject):
             cv.Flip(frame, mirroredFrame, 1)
             frame = mirroredFrame
         if self.record :
+            print time.clock() - self.time
+            self.time = time.clock()
             cv.WriteFrame(self.writer, frame)
         self.newFrame.emit(frame)
        
-           
-
-    @property
+    @property   
     def paused(self):
+        print 'paused'        
         return not self._timer.isActive()
 
     @paused.setter
@@ -93,14 +102,16 @@ class CameraDevice(QtCore.QObject):
         fps = int(cv.GetCaptureProperty(self._cameraDevice, cv.CV_CAP_PROP_FPS))
         if not fps > 0:
             fps = self._DEFAULT_FPS
+        print "fps", fps
+
         return fps
 
     def create_writer(self, fps, fname) :
         w, h = self.frameSize
         print fps
-        fps=24
         fourcc = cv.CV_FOURCC('M', 'J', 'P', 'G')
-        self.writer = cv.CreateVideoWriter(fname, fourcc, fps, (w, h), 1)        
+        self.writer = cv.CreateVideoWriter(fname, fourcc, self._DEFAULT_FPS, (w, h), 1)        
+        print self.writer
 
 #    def record(self):
 #        self.createWriter(fps=24, fname='out.avi')

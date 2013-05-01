@@ -22,13 +22,14 @@ class MaFenetre(QDialog, UiMaFenetre):
         self.setupUi(conteneur)
         self.pushButton.clicked.connect(self.start_chrono)
         self.pushButton_2.clicked.connect(self.reset)
-        self.duree = 11.0  # la duree en sec
+        self.duree = 10.0  # la duree en sec
         self.lcdNumber.display(str(self.duree))
         self.intervale = 50/1000.0
         self.time = QTime()
 
         self.cameraDevice = CameraDevice(mirrored=True)
         self.cameraWidget = CameraWidget(self.cameraDevice)
+        self.cameraRecord = CameraDevice(record=False)
 
         self.horizontalLayout.insertWidget(1, self.cameraWidget)
         self.cameraWidget.show()
@@ -45,7 +46,14 @@ class MaFenetre(QDialog, UiMaFenetre):
         # afficher le fond en blanc
 
         # on arrete l'enregistrement
+        self.stopRecord()
 
+    def stopRecord(self) :
+        self.cameraRecord.setRecord(False)
+        """try :
+            del self.cameraRecord
+        except AttributeError :
+            pass        """
 
     @pyqtSlot()
     def start_chrono(self):
@@ -53,8 +61,7 @@ class MaFenetre(QDialog, UiMaFenetre):
         self.timer.start(self.intervale*1000.0)
         self.time.start()
         self.pushButton.setEnabled(False)
-        self.cameraRecord = CameraDevice(record=True)
-        
+        self.cameraRecord.setRecord(True)
 
     def decompte(self):
         val = -(self.time.elapsed() - self.duree*1000)
@@ -69,6 +76,7 @@ class MaFenetre(QDialog, UiMaFenetre):
             self.timer.stop()
             print("stopp")
             # on arrete l'enregistrement
+            self.stopRecord()
 
             # afficher le fond en rouge
 
