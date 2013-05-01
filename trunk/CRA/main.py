@@ -22,7 +22,7 @@ class MaFenetre(QDialog, UiMaFenetre):
         self.setupUi(conteneur)
         self.pushButton.clicked.connect(self.start_chrono)
         self.pushButton_2.clicked.connect(self.reset)
-        self.duree = 10.0  # la duree en sec
+        self.duree = 90.0  # la duree en sec
         self.lcdNumber.display(str(self.duree))
         self.intervale = 50/1000.0
         self.time = QTime()

@@ -115,7 +115,7 @@ class CameraDevice(QtCore.QObject):
         w, h = self.frameSize
         print fps
         fourcc = cv.CV_FOURCC('M', 'J', 'P', 'G')
-        self.writer = cv.CreateVideoWriter(fname, fourcc, self._DEFAULT_FPS, (w, h), 1)        
+        self.writer = cv.CreateVideoWriter(fname, fourcc, self._DEFAULT_FPS/2, (w, h), 1)        
         print self.writer
 
 #    def record(self):
