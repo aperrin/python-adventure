@@ -26,13 +26,19 @@ class MaFenetre(QDialog, UiMaFenetre):
         self.lcdNumber.display(str(self.duree))
         self.intervale = 50/1000.0
         self.time = QTime()
+        self._timer = QtCore.QTimer(self)
 
-        self.cameraDevice = CameraDevice(mirrored=True)
+        self.cameraDevice = CameraDevice(mirrored=True, timer = self._timer)
         self.cameraWidget = CameraWidget(self.cameraDevice)
-        self.cameraRecord = CameraDevice(record=False)
+        self.cameraRecord = CameraDevice(record=False, timer = self._timer)
+
+        self._timer.timeout.connect(self.cameraDevice._queryFrame)
+        self._timer.timeout.connect(self.cameraRecord._queryFrame)
 
         self.horizontalLayout.insertWidget(1, self.cameraWidget)
         self.cameraWidget.show()
+        
+
 
     @pyqtSlot()
     def reset(self):

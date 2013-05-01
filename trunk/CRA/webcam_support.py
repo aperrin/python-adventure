@@ -38,18 +38,22 @@ class CameraDevice(QtCore.QObject):
     newFrame = QtCore.pyqtSignal(cv.iplimage)
 
     def __init__(self, cameraId=0, mirrored=False, parent=None, 
-                 record=False):
+                 record=False, timer = None):
         super(CameraDevice, self).__init__(parent)
 
         self.mirrored = mirrored
 
         self._cameraDevice = cv.CaptureFromCAM(cameraId)
         cv.SetCaptureProperty(self._cameraDevice, cv.CV_CAP_PROP_FPS, self._DEFAULT_FPS)
+        
+        
+        self._timer = timer
+        print self._timer
 
-        self._timer = QtCore.QTimer(self)
+        """
         self._timer.timeout.connect(self._queryFrame)
         self._timer.setInterval(1000/self._DEFAULT_FPS)#self.fps)
-    
+        """
         self.paused = False
         self.record = record
         self.name = "out3.avi"
@@ -87,7 +91,8 @@ class CameraDevice(QtCore.QObject):
         if p:
             self._timer.stop()
         else:
-            self._timer.start()
+            if not self._timer.isActive():
+                self._timer.start()
 
     @property
     def frameSize(self):
