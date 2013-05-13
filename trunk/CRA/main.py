@@ -30,7 +30,8 @@ class MaFenetre(QDialog, UiMaFenetre):
 
         self.cameraDevice = CameraDevice(mirrored=True, timer = self._timer)
         self.cameraWidget = CameraWidget(self.cameraDevice)
-        self.cameraRecord = CameraDevice(record=False, timer = self._timer)
+        self.cameraRecord = CameraDevice(mirrored=True, record=False, 
+                                         timer = self._timer)
 
         self._timer.timeout.connect(self.cameraDevice._queryFrame)
         self._timer.timeout.connect(self.cameraRecord._queryFrame)
@@ -56,10 +57,6 @@ class MaFenetre(QDialog, UiMaFenetre):
 
     def stopRecord(self) :
         self.cameraRecord.setRecord(False)
-        """try :
-            del self.cameraRecord
-        except AttributeError :
-            pass        """
 
     @pyqtSlot()
     def start_chrono(self):
@@ -67,6 +64,10 @@ class MaFenetre(QDialog, UiMaFenetre):
         self.timer.start(self.intervale*1000.0)
         self.time.start()
         self.pushButton.setEnabled(False)
+        name_video = "match_{0}_vs_{1}.avi".format(self.lineEdit_2.text(), 
+                                                self.lineEdit_3.text())
+        print 'name_video : {0}'.format(name_video)        
+        self.cameraRecord.name = name_video
         self.cameraRecord.setRecord(True)
 
     def decompte(self):

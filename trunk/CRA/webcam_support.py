@@ -38,7 +38,7 @@ class CameraDevice(QtCore.QObject):
     newFrame = QtCore.pyqtSignal(cv.iplimage)
 
     def __init__(self, cameraId=0, mirrored=False, parent=None, 
-                 record=False, timer = None):
+                 record=False, timer = None, name = 'out.avi'):
         super(CameraDevice, self).__init__(parent)
 
         self.mirrored = mirrored
@@ -56,7 +56,7 @@ class CameraDevice(QtCore.QObject):
         """
         self.paused = False
         self.record = record
-        self.name = "out3.avi"
+        self.name = name
             
     def setRecord(self, record) :
         self.record = record
@@ -76,7 +76,7 @@ class CameraDevice(QtCore.QObject):
             cv.Flip(frame, mirroredFrame, 1)
             frame = mirroredFrame
         if self.record :
-            print time.clock() - self.time
+            print 1.0/(time.clock() - self.time)
             self.time = time.clock()
             cv.WriteFrame(self.writer, frame)
         self.newFrame.emit(frame)
@@ -107,7 +107,6 @@ class CameraDevice(QtCore.QObject):
         fps = int(cv.GetCaptureProperty(self._cameraDevice, cv.CV_CAP_PROP_FPS))
         if not fps > 0:
             fps = self._DEFAULT_FPS
-        print "fps", fps
 
         return fps
 
@@ -116,7 +115,6 @@ class CameraDevice(QtCore.QObject):
         print fps
         fourcc = cv.CV_FOURCC('M', 'J', 'P', 'G')
         self.writer = cv.CreateVideoWriter(fname, fourcc, self._DEFAULT_FPS/2, (w, h), 1)        
-        print self.writer
 
 #    def record(self):
 #        self.createWriter(fps=24, fname='out.avi')
