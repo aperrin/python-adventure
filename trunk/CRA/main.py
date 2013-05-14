@@ -4,14 +4,16 @@ Created on Tue Mar 26 22:34:10 2013
 
 @author: Mat
 """
+import sys
+import os
+
 from PyQt4.QtGui import QApplication, QDialog
 from PyQt4 import uic
 from PyQt4.QtCore import *
-import sys
+
 from webcam_support import *
 
 UiMaFenetre, Klass = uic.loadUiType('fenetre.ui')
-
 
 class MaFenetre(QDialog, UiMaFenetre):
     def __init__(self, conteneur=None):
@@ -22,7 +24,7 @@ class MaFenetre(QDialog, UiMaFenetre):
         self.setupUi(conteneur)
         self.pushButton.clicked.connect(self.start_chrono)
         self.pushButton_2.clicked.connect(self.reset)
-        self.duree = 90.0  # la duree en sec
+        self.duree = 10.0  # la duree en sec
         self.lcdNumber.display(str(self.duree))
         self.intervale = 50/1000.0
         self.time = QTime()
@@ -35,10 +37,38 @@ class MaFenetre(QDialog, UiMaFenetre):
 
         self._timer.timeout.connect(self.cameraDevice._queryFrame)
         self._timer.timeout.connect(self.cameraRecord._queryFrame)
-
+        
+        self.lineEdit.cursorPositionChanged.connect(self.clearScore)
+        self.lineEdit_2.cursorPositionChanged.connect(self.clearScore)
+        
+        #self.lineEdit.textChanged.connect(self.checkScore)
+        
+        
+        
         self.horizontalLayout.insertWidget(1, self.cameraWidget)
         self.cameraWidget.show()
+        self.load_teams()
         
+        
+    def checkScore(self,newString):
+        if not str(newString).isdigit():
+            print newString
+        
+    def clearScore(self):
+        if "Score" in str(self.sender().text()):
+           self.sender().clear()
+           self.sender().setInputMask('9999')
+        
+
+    def load_teams(self):
+        f_name = "./team_names.txt"
+        with open(f_name, "r") as f:
+            lines = f.readlines()
+        lines = map(lambda x: x.strip(), lines)
+        self.comboBox.clear()
+        self.comboBox.addItems(lines)
+        self.comboBox_2.clear()
+        self.comboBox_2.addItems(lines)
 
 
     @pyqtSlot()
@@ -47,8 +77,8 @@ class MaFenetre(QDialog, UiMaFenetre):
             self.timer.stop()
 
         self.lcdNumber.display(str(self.duree))
-        self.lineEdit_2.setText('')
-        self.lineEdit_3.setText('')
+        self.comboBox.setCurrentIndex(0)
+        self.comboBox_2.setCurrentIndex(0)
         self.pushButton.setEnabled(True)
         # afficher le fond en blanc
 
@@ -58,14 +88,25 @@ class MaFenetre(QDialog, UiMaFenetre):
     def stopRecord(self) :
         self.cameraRecord.setRecord(False)
 
+    def create_record_name(self) :
+        name = "{0}_vs_{1}_match_1".format(self.comboBox.currentText(), 
+                                                self.comboBox_2.currentText())
+        #print 'name_video : {0}'.format(name_video)     
+        l_avi = [i for i in os.listdir('.') if '.avi' in i]
+        l_avi = map(lambda x: x.split('.avi')[0], l_avi)
+        print l_avi
+        while name in l_avi :
+            num = int(name[-1]) + 1
+            name = name[:-1] + str(num)
+        return name + '.avi'
+
     @pyqtSlot()
     def start_chrono(self):
         self.timer.timeout.connect(self.decompte)
         self.timer.start(self.intervale*1000.0)
         self.time.start()
         self.pushButton.setEnabled(False)
-        name_video = "match_{0}_vs_{1}.avi".format(self.lineEdit_2.text(), 
-                                                self.lineEdit_3.text())
+        name_video = self.create_record_name()
         print 'name_video : {0}'.format(name_video)        
         self.cameraRecord.name = name_video
         self.cameraRecord.setRecord(True)
@@ -84,8 +125,18 @@ class MaFenetre(QDialog, UiMaFenetre):
             print("stopp")
             # on arrete l'enregistrement
             self.stopRecord()
+            # on ajoute les deux équipes à la feuille de match            
+            self.addMatch()
+            
 
             # afficher le fond en rouge
+            
+    def addMatch(self) :
+        self.lineEdit.setInputMask("")
+        self.lineEdit.setText("Score Equipe A")
+        self.lineEdit_2.setInputMask("")
+        self.lineEdit_2.setText("Score Equipe B")
+        pass        
 
 
 if __name__ == "__main__":

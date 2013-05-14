@@ -61,8 +61,6 @@ class CameraDevice(QtCore.QObject):
     def setRecord(self, record) :
         self.record = record
         self.time = time.clock()
-        
-        # TODO fuite memoire ?
         if record :
             self.create_writer(fps=self._DEFAULT_FPS, fname=self.name)
 
