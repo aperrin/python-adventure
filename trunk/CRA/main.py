@@ -6,6 +6,7 @@ Created on Tue Mar 26 22:34:10 2013
 """
 import sys
 import os
+os.system("pyuic4 fenetre.ui > intGra.py")
 
 from PyQt4.QtGui import QApplication, QDialog
 from PyQt4 import uic
@@ -40,14 +41,55 @@ class MaFenetre(QDialog, UiMaFenetre):
         
         self.lineEdit.cursorPositionChanged.connect(self.clearScore)
         self.lineEdit_2.cursorPositionChanged.connect(self.clearScore)
-        
-        #self.lineEdit.textChanged.connect(self.checkScore)
-        
-        
+        self.pushButton_score.clicked.connect(self.addScoreToDict)
+
+        self.score = score()
         
         self.horizontalLayout.insertWidget(1, self.cameraWidget)
         self.cameraWidget.show()
         self.load_teams()
+        self.tour = -1
+        
+    def addScoreToDict(self):
+        l_team = (self.comboBox.currentText(), self.comboBox_2.currentText())
+        l_score = (self.lineEdit.text(), self.lineEdit_2.text())
+        self.score.add_match(self.spinBox.value(), l_team, l_score)
+        print self.score.results
+        self.addScoreToWidget()
+        
+    def addScoreToWidget(self):
+        #self.treeWidget.addTopLevelItem("plop")
+        tour = self.spinBox.value()
+        if tour!=self.tour:
+            newTour = QtGui.QTreeWidgetItem(self.treeWidget)
+            newTour.setText(0, "Tour "+str(tour))
+            tour = self.spinBox.value()
+            self.tour = tour 
+        
+        scores = QtGui.QTreeWidgetItem()
+        scores.setText(0,"{} - {}".format(self.lineEdit.text(), 
+                       self.lineEdit_2.text()))
+        
+        teams = QtGui.QTreeWidgetItem()
+        teams.setText(0,"{} - {}".format(self.comboBox.currentText(), 
+                      self.comboBox_2.currentText()))
+        
+        self.treeWidget.topLevelItem(tour-1).addChild(teams)
+        self.treeWidget.topLevelItem(tour-1).child(self.score.nb_match-1)\
+                                            .addChild(scores)
+        
+#        teams.addChild(scores)
+#        
+#        self.treeWidget.topLevelItem(0).setText(0, QtGui.QApplication.translate("Dialog", ",lm", None, QtGui.QApplication.UnicodeUTF8))
+#        self.treeWidget.topLevelItem(0).child(0).setText(0, QtGui.QApplication.translate("Dialog", "l,m", None, QtGui.QApplication.UnicodeUTF8))
+#        self.treeWidget.topLevelItem(0).child(0).child(0).setText(0, QtGui.QApplication.translate("Dialog", ",ml", None, QtGui.QApplication.UnicodeUTF8))
+#        self.treeWidget.topLevelItem(0).child(1).setText(0, QtGui.QApplication.translate("Dialog", "nkln!", None, QtGui.QApplication.UnicodeUTF8))
+#        self.treeWidget.topLevelItem(0).child(1).child(0).setText(0, QtGui.QApplication.translate("Dialog", "kln,l!", None, QtGui.QApplication.UnicodeUTF8))
+# 
+#        
+#        self.treeWidget.setHeaderLabel("plop")
+#        self.treeWidget.insertTopLevelItem(2, tours)  
+        
         
         
     def checkScore(self,newString):
@@ -137,6 +179,33 @@ class MaFenetre(QDialog, UiMaFenetre):
         self.lineEdit_2.setInputMask("")
         self.lineEdit_2.setText("Score Equipe B")
         pass        
+
+class score :
+    
+    def __init__(self):
+        self.results = {}    
+        self.nb_match = 0
+        self.tour = 0
+    
+    def get_score(self, tour):
+        pass
+    
+    def add_match(self, tour, l_team, l_score):
+        if tour == self.tour:
+            self.nb_match += 1
+        else :
+            self.nb_match = 1
+            self.tour = tour
+        teamA, teamB = l_team
+        scoreA, scoreB = l_score
+        self.results.setdefault(tour, {})
+        self.results[tour].setdefault(self.nb_match, {})
+        
+        print 'ajout', self.nb_match
+        print self.results
+        
+        self.results[tour][self.nb_match].setdefault(teamA, scoreA)
+        self.results[tour][self.nb_match].setdefault(teamB, scoreB)
 
 
 if __name__ == "__main__":
