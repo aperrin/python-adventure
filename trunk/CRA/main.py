@@ -40,7 +40,7 @@ class MaFenetre(QDialog, UiMaFenetre):
         
         self.lineEdit.cursorPositionChanged.connect(self.clearScore)
         self.lineEdit_2.cursorPositionChanged.connect(self.clearScore)
-        
+        #self.pushButton_3.clicked.connect(self.add_score)
         #self.lineEdit.textChanged.connect(self.checkScore)
         
         
@@ -48,6 +48,7 @@ class MaFenetre(QDialog, UiMaFenetre):
         self.horizontalLayout.insertWidget(1, self.cameraWidget)
         self.cameraWidget.show()
         self.load_teams()
+        self.score = score()
         
         
     def checkScore(self,newString):
@@ -79,9 +80,9 @@ class MaFenetre(QDialog, UiMaFenetre):
         self.lcdNumber.display(str(self.duree))
         self.comboBox.setCurrentIndex(0)
         self.comboBox_2.setCurrentIndex(0)
-        self.pushButton.setEnabled(True)
-        # afficher le fond en blanc
-
+        self.pushButton.setEnabled(True)        
+        self.lineEdit.setText(u'Score équipe A')        
+        self.lineEdit_2.setText(u'Score équipe B')        
         # on arrete l'enregistrement
         self.stopRecord()
 
@@ -136,7 +137,34 @@ class MaFenetre(QDialog, UiMaFenetre):
         self.lineEdit.setText("Score Equipe A")
         self.lineEdit_2.setInputMask("")
         self.lineEdit_2.setText("Score Equipe B")
-        pass        
+    
+    def add_score(self):
+        pass
+        """tour = 
+        l_team  = [self.comboBox.currentText(), self.comboBox_2.currentText()]
+        l_score = 
+        self.score.add_match()
+        """
+
+class score :
+    def __init__(self):
+        self.results = {}
+        self.nb_match = 0
+    
+    def get_score(self, tour):
+        pass
+    
+    def add_match(self, tour, l_team, l_score):
+        self.nb_match += 1        
+        teamA, teamB = l_team
+        
+        scoreA, scoreB = l_score        
+        self.results.setdefault(tour, {})
+        self.results[tour].setdefault(self.nb_match, {})
+        print 'ajout', self.nb_match
+        print self.results
+        self.results[tour][self.nb_match].setdefault(teamA, scoreA)
+        self.results[tour][self.nb_match].setdefault(teamB, scoreB)
 
 
 if __name__ == "__main__":
