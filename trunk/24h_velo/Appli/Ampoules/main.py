@@ -20,11 +20,15 @@ class serial_data(threading.Thread):
         self.res_moyenne = 1000
         self.len_moyenne = len_moyenne
         self.l_values = []     
-        self.time_max = 60
         self.threshold = 4e-2 # anti-rebond
         self.alive = threading.Event()
         self.alive.set()
-        self.max = 5 # empirique
+        self._max = 9 # empirique
+        self._continue = True        
+
+    def toggle_continue(self):        
+        print self._continue
+        self._continue = not self._continue
         
     def init_l_values(self):
         old_time = time.clock()
@@ -38,7 +42,7 @@ class serial_data(threading.Thread):
         self.init_l_values()
         time_now = time.clock()
         old_time = time.clock()
-        while (time.clock() - time_now) < self.time_max:
+        while self._continue: # TODO : interuption sur clavier ?
             data = self.ser.readline()
             if data :
                 _time = time.clock()
@@ -72,9 +76,16 @@ class allume_ampoule:
         dt = self.ser.get_data()
         dt = 1.0/dt # vitesse : plus c'est grand, plus ca va vite
         print 'dt', dt      
-        nb = int(dt*24.0/9)
-        if nb > 24 :
-            nb = 24
+        nb = int(dt*float(self.nb_ampoule)/ self.ser._max)
+        if nb > self.nb_ampoule :
+            _property = QDeclarativeProperty(
+                        self.rootObject, "st_terre")
+            _property.write('./images/terre_fun.jpg')
+            nb = self.nb_ampoule
+        else :
+            _property = QDeclarativeProperty(
+                        self.rootObject, "st_terre")
+            _property.write('./images/ampoule_eteinte.png')
         return nb
                 
         
@@ -86,6 +97,7 @@ class allume_ampoule:
             _property = QDeclarativeProperty(
                         self.rootObject, "st_amp"+str(n_ampoule))
             _property.write("./images/ampoule_allumee.png")
+            
         
         for i in range(nb_allume, self.nb_ampoule):
             n_ampoule = self.l_ampoule[i]
@@ -109,7 +121,7 @@ _timer = QtCore.QTimer()
 _timer.timeout.connect(allu.allume)
 _timer.start(100)
 
-
+#rootObject.keyPressedEvent.connect(ser.toggle_continue)
 view.showFullScreen()
 
 app.exec_()

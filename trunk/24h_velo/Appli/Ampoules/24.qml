@@ -33,6 +33,7 @@ Rectangle{
     property string st_amp22: "./images/ampoule_eteinte.png"
     property string st_amp23: "./images/ampoule_eteinte.png"
     property string st_amp24: "./images/ampoule_eteinte.png"
+    property string st_terre: "./images/ampoule_eteinte.png"
     color: "black"
 
 
@@ -250,6 +251,15 @@ Rectangle{
      width: 48
      height: 76
      source: st_amp24
+ }
+
+ Image {
+     id: terre
+     x: 1200
+     y: (1080-400)/2
+     width: 400
+     height: 400
+     source: st_terre
  }
 
 
