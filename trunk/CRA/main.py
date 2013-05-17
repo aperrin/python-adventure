@@ -10,7 +10,7 @@ import os
 
 import json
 
-from PyQt4.QtGui import QApplication, QDialog
+from PyQt4.QtGui import QApplication, QDialog, QMessageBox
 from PyQt4 import uic
 from PyQt4.QtCore import *
 
@@ -55,36 +55,87 @@ class MaFenetre(QDialog, UiMaFenetre):
         self.tour = -1
         
     def deleteMatch(self):
+        ''' pour supprimer un match s'il a ete ajoute par erreur :
+            supprime la ligne selectionnee s'il s'agit d'un match ;
+            ne fait rien sinon (si on a selectionne la ligne "tour x")
+            
+            Supprime egalement l'entree correspondante du dictionnaire et
+            reenregistre dans le fichier json
+        '''
         curItem = self.treeWidget.currentItem()
         parent = curItem.parent()
-        parent.removeChild(curItem)
+        if parent :
+            parent.removeChild(curItem)
+            curMatch = str(curItem.text(0)).split()[0]
+            curTour = str(parent.text(0)).split()[-1]
+            del self.score.results[curTour][curMatch]
+            self.score.save_matchs()
+        
         #index = 0
         #self.treeWidget.takeTopLevelItem(index)     
         
     def addScoreToDict(self):
-        l_team = (self.comboBox.currentText(), self.comboBox_2.currentText())
-        l_score = (self.lineEdit.text(), self.lineEdit_2.text())
-        self.score.add_match(self.spinBox.value(), l_team, l_score)
-        self.addScoreToWidget()
+        ''' lorsqu'on clic sur valider score, ajoute le match en cours au
+        tableau des scores (2eme onglet) et au dictionnaire qui est enregistre 
+        en json, sauf si les deux equipes sont les
+        memes, auquel cas il affiche une box pour prevenir de les changer
+        '''
+        if self.comboBox.currentText() == self.comboBox_2.currentText():
+            QMessageBox.information(None, "Attention", 
+                    "Une equipe ne peut pas jouer un match contre elle-meme ! \
+                    \n Veuillez changer au moins une equipe pour pouvoir enregistrer le match.")
+        elif self.lineEdit.text() == "" or self.lineEdit_2.text() == "" :
+            QMessageBox.information(None, "Attention", 
+                    "Veuillez entrer le score de chacune des equipes.")
+        else:
+            l_team = (self.comboBox.currentText(), self.comboBox_2.currentText())
+            l_score = (self.lineEdit.text(), self.lineEdit_2.text())
+            self.score.add_match(self.spinBox.value(), l_team, l_score)
+            self.addScoreToWidget()
+            # on reinitialise les champs de texte ou entrer les scores            
+            self.addMatch()
+            
         
     def addScoreToWidget(self):
-        '''ajouter le score du match en cours au tableau des scores
+        '''ajouter graphiquement le score du match en cours 
+        au tableau des scores
         '''
         tour = self.spinBox.value()
         if tour!=self.tour:
-            newTour = QtGui.QTreeWidgetItem(self.treeWidget)
-            newTour.setText(0, "Tour "+str(tour))
-            tour = self.spinBox.value()
+            if not self.treeWidget.topLevelItem(tour-1):
+                newTour = QtGui.QTreeWidgetItem(self.treeWidget)
+                newTour.setText(0, "Tour "+str(tour))
             self.tour = tour 
         
         teams = QtGui.QTreeWidgetItem()
-        teams.setText(0,"{} - {}".format(self.comboBox.currentText(), 
+        teams.setText(0,"{} : {} - {}".format(self.score.nb_match,
+                      self.comboBox.currentText(), 
                       self.comboBox_2.currentText()))
         teams.setText(1,"{} - {}".format(self.lineEdit.text(), 
                        self.lineEdit_2.text()))
                        
         self.treeWidget.topLevelItem(tour-1).addChild(teams)
         
+    def _decode_dict(self, data):
+        '''Lorsqu'on load un fichier json, les chaines de caractère sont en 
+        unicode. Cette méthode permet de passer toutes les chaines des 
+        dictionnaires en ascii, pour que ce soit 
+        utilisable par la suite
+        '''
+        res = {}
+        for key, value in data.iteritems():
+            if isinstance(key, unicode):
+               key = key.encode('utf-8')
+            if isinstance(value, unicode):
+               value = value.encode('utf-8')
+            elif isinstance(value, list):
+               value = self._decode_list(value)
+            elif isinstance(value, dict):
+               value = self._decode_dict(value)
+            res[key] = value
+        return res
+
+
     
     def load_scores(self):
         '''si le programme a été fermé et qu'on le rouvre pendant la coupe,
@@ -93,17 +144,22 @@ class MaFenetre(QDialog, UiMaFenetre):
         '''
         f_name = "./resultats.json"
         with open(f_name, "r") as f:
-            self.score.results = json.load(f)
+            obj = json.load(f)
+            obj = self._decode_dict(obj)
+            self.score.results = obj
 #        print self.score.results.keys()
 #        print self.score.results
         map(self.createTreeWidIt, self.score.results.keys())
-        
+        #print "nb match charges"+ str(self.score.nb_match)
         
     def createTreeWidIt(self, tour):
+        '''Quand on load un fichier de scores, on commence par effacer tout
+        ce qu'il y a actuellement, puis on cree les item pour chaque match
+        '''
         self.treeWidget.clear()
         newTour = QtGui.QTreeWidgetItem(self.treeWidget)
         newTour.setText(0, "Tour "+str(tour))
-        matchs = self.score.results[tour].keys()
+        matchs = sorted(self.score.results[tour].keys())
         #print matchs
         for m in matchs:
             teamA, teamB = self.score.results[tour][m].keys()
@@ -111,21 +167,23 @@ class MaFenetre(QDialog, UiMaFenetre):
             scoreB = self.score.results[tour][m][teamB]
             
             teams = QtGui.QTreeWidgetItem()
-            teams.setText(0,"{} - {}".format(teamA, teamB))
+            teams.setText(0,"{} : {} - {}".format(m, teamA, teamB))
             teams.setText(1,"{} - {}".format(scoreA, scoreB))
             self.treeWidget.topLevelItem(int(tour)-1).addChild(teams)
+            if int(m)>self.score.nb_match:
+                self.score.nb_match = int(m)
                 
-    def checkScore(self,newString):
-        if not str(newString).isdigit():
-            print newString
-        
     def clearScore(self):
+        ''' Efface l'inscription 'score equipe A' pour pouvoir entrer le score
+        '''
         if "Score" in str(self.sender().text()):
            self.sender().clear()
-           self.sender().setInputMask('9999')
-        
+           self.sender().setValidator(QtGui.QIntValidator())
 
     def load_teams(self):
+        ''' Charger les noms des equipes participantes (contenues dans
+        team_names.txt)
+        '''
         f_name = "./team_names.txt"
         with open(f_name, "r") as f:
             lines = f.readlines()
@@ -145,6 +203,10 @@ class MaFenetre(QDialog, UiMaFenetre):
         self.comboBox.setCurrentIndex(0)
         self.comboBox_2.setCurrentIndex(0)
         self.pushButton.setEnabled(True)
+        
+        # on reinitialise les champs de texte ou entrer les scores            
+        self.addMatch()
+            
         # afficher le fond en blanc
 
         # on arrete l'enregistrement
@@ -190,18 +252,14 @@ class MaFenetre(QDialog, UiMaFenetre):
             print("stopp")
             # on arrete l'enregistrement
             self.stopRecord()
-            # on ajoute les deux équipes à la feuille de match            
-            self.addMatch()
-            
 
             # afficher le fond en rouge
             
     def addMatch(self) :
-        self.lineEdit.setInputMask("")
+        self.lineEdit.setValidator(QtGui.QRegExpValidator())
         self.lineEdit.setText("Score Equipe A")
-        self.lineEdit_2.setInputMask("")
+        self.lineEdit_2.setValidator(QtGui.QRegExpValidator())
         self.lineEdit_2.setText("Score Equipe B")
-        pass        
 
 class score :
     
@@ -210,8 +268,11 @@ class score :
         self.nb_match = 0
         self.tour = 0
     
-    def get_score(self, tour):
-        pass
+    def save_matchs(self):
+        f_name = "./resultats.json"
+        with open(f_name, "w") as f:
+            json.dump(self.results,f, sort_keys=True, 
+                      indent=4)
     
     def add_match(self, tour, l_team, l_score):
 #        if tour == self.tour:
@@ -221,19 +282,21 @@ class score :
 #            self.tour = tour
         teamA, teamB = l_team
         scoreA, scoreB = l_score
-        self.results.setdefault(tour, {})
-        self.results[tour].setdefault(self.nb_match, {})
+        self.results.setdefault(str(tour), {})
+        self.results[str(tour)].setdefault(str(self.nb_match), {})
         
         print 'ajout', self.nb_match
         
-        self.results[tour][self.nb_match].setdefault(str(teamA), str(scoreA))
-        self.results[tour][self.nb_match].setdefault(str(teamB), str(scoreB))
+        self.results[str(tour)][str(self.nb_match)].setdefault(str(teamA), str(scoreA))
+        self.results[str(tour)][str(self.nb_match)].setdefault(str(teamB), str(scoreB))
         
-        print self.results
-        
-        f_name = "./resultats.json"
-        with open(f_name, "w") as f:
-            json.dump(self.results,f)
+#        print "score enregistre : " 
+#        print(self.results)
+#        print("____________________________")
+#        
+        self.save_matchs()
+                      
+
 
 
 if __name__ == "__main__":
