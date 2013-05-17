@@ -6,7 +6,9 @@ Created on Tue Mar 26 22:34:10 2013
 """
 import sys
 import os
-os.system("pyuic4 fenetre.ui > intGra.py")
+#os.system("pyuic4 fenetre.ui > intGra.py")
+
+import json
 
 from PyQt4.QtGui import QApplication, QDialog
 from PyQt4 import uic
@@ -42,7 +44,9 @@ class MaFenetre(QDialog, UiMaFenetre):
         self.lineEdit.cursorPositionChanged.connect(self.clearScore)
         self.lineEdit_2.cursorPositionChanged.connect(self.clearScore)
         self.pushButton_score.clicked.connect(self.addScoreToDict)
-
+        self.pushButton_3.clicked.connect(self.load_scores)
+        self.pushButton_4.clicked.connect(self.deleteMatch)        
+        
         self.score = score()
         
         self.horizontalLayout.insertWidget(1, self.cameraWidget)
@@ -50,15 +54,22 @@ class MaFenetre(QDialog, UiMaFenetre):
         self.load_teams()
         self.tour = -1
         
+    def deleteMatch(self):
+        curItem = self.treeWidget.currentItem()
+        parent = curItem.parent()
+        parent.removeChild(curItem)
+        #index = 0
+        #self.treeWidget.takeTopLevelItem(index)     
+        
     def addScoreToDict(self):
         l_team = (self.comboBox.currentText(), self.comboBox_2.currentText())
         l_score = (self.lineEdit.text(), self.lineEdit_2.text())
         self.score.add_match(self.spinBox.value(), l_team, l_score)
-        print self.score.results
         self.addScoreToWidget()
         
     def addScoreToWidget(self):
-        #self.treeWidget.addTopLevelItem("plop")
+        '''ajouter le score du match en cours au tableau des scores
+        '''
         tour = self.spinBox.value()
         if tour!=self.tour:
             newTour = QtGui.QTreeWidgetItem(self.treeWidget)
@@ -66,32 +77,44 @@ class MaFenetre(QDialog, UiMaFenetre):
             tour = self.spinBox.value()
             self.tour = tour 
         
-        scores = QtGui.QTreeWidgetItem()
-        scores.setText(0,"{} - {}".format(self.lineEdit.text(), 
-                       self.lineEdit_2.text()))
-        
         teams = QtGui.QTreeWidgetItem()
         teams.setText(0,"{} - {}".format(self.comboBox.currentText(), 
                       self.comboBox_2.currentText()))
-        
+        teams.setText(1,"{} - {}".format(self.lineEdit.text(), 
+                       self.lineEdit_2.text()))
+                       
         self.treeWidget.topLevelItem(tour-1).addChild(teams)
-        self.treeWidget.topLevelItem(tour-1).child(self.score.nb_match-1)\
-                                            .addChild(scores)
         
-#        teams.addChild(scores)
-#        
-#        self.treeWidget.topLevelItem(0).setText(0, QtGui.QApplication.translate("Dialog", ",lm", None, QtGui.QApplication.UnicodeUTF8))
-#        self.treeWidget.topLevelItem(0).child(0).setText(0, QtGui.QApplication.translate("Dialog", "l,m", None, QtGui.QApplication.UnicodeUTF8))
-#        self.treeWidget.topLevelItem(0).child(0).child(0).setText(0, QtGui.QApplication.translate("Dialog", ",ml", None, QtGui.QApplication.UnicodeUTF8))
-#        self.treeWidget.topLevelItem(0).child(1).setText(0, QtGui.QApplication.translate("Dialog", "nkln!", None, QtGui.QApplication.UnicodeUTF8))
-#        self.treeWidget.topLevelItem(0).child(1).child(0).setText(0, QtGui.QApplication.translate("Dialog", "kln,l!", None, QtGui.QApplication.UnicodeUTF8))
-# 
-#        
-#        self.treeWidget.setHeaderLabel("plop")
-#        self.treeWidget.insertTopLevelItem(2, tours)  
-        
+    
+    def load_scores(self):
+        '''si le programme a été fermé et qu'on le rouvre pendant la coupe,
+        charger les scores des matchs qui ont déjà eu lieu avant dans le 
+        tableau des scores
+        '''
+        f_name = "./resultats.json"
+        with open(f_name, "r") as f:
+            self.score.results = json.load(f)
+#        print self.score.results.keys()
+#        print self.score.results
+        map(self.createTreeWidIt, self.score.results.keys())
         
         
+    def createTreeWidIt(self, tour):
+        self.treeWidget.clear()
+        newTour = QtGui.QTreeWidgetItem(self.treeWidget)
+        newTour.setText(0, "Tour "+str(tour))
+        matchs = self.score.results[tour].keys()
+        #print matchs
+        for m in matchs:
+            teamA, teamB = self.score.results[tour][m].keys()
+            scoreA = self.score.results[tour][m][teamA]
+            scoreB = self.score.results[tour][m][teamB]
+            
+            teams = QtGui.QTreeWidgetItem()
+            teams.setText(0,"{} - {}".format(teamA, teamB))
+            teams.setText(1,"{} - {}".format(scoreA, scoreB))
+            self.treeWidget.topLevelItem(int(tour)-1).addChild(teams)
+                
     def checkScore(self,newString):
         if not str(newString).isdigit():
             print newString
@@ -191,21 +214,26 @@ class score :
         pass
     
     def add_match(self, tour, l_team, l_score):
-        if tour == self.tour:
-            self.nb_match += 1
-        else :
-            self.nb_match = 1
-            self.tour = tour
+#        if tour == self.tour:
+        self.nb_match += 1
+#        else :
+#            self.nb_match = 1
+#            self.tour = tour
         teamA, teamB = l_team
         scoreA, scoreB = l_score
         self.results.setdefault(tour, {})
         self.results[tour].setdefault(self.nb_match, {})
         
         print 'ajout', self.nb_match
+        
+        self.results[tour][self.nb_match].setdefault(str(teamA), str(scoreA))
+        self.results[tour][self.nb_match].setdefault(str(teamB), str(scoreB))
+        
         print self.results
         
-        self.results[tour][self.nb_match].setdefault(teamA, scoreA)
-        self.results[tour][self.nb_match].setdefault(teamB, scoreB)
+        f_name = "./resultats.json"
+        with open(f_name, "w") as f:
+            json.dump(self.results,f)
 
 
 if __name__ == "__main__":
