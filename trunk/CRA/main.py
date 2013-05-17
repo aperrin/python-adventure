@@ -33,6 +33,8 @@ class MaFenetre(QDialog, UiMaFenetre):
         self.time = QTime()
         self._timer = QtCore.QTimer(self)
 
+        delKeyPressedSignal = pyqtSignal(QEvent)
+
         self.cameraDevice = CameraDevice(mirrored=True, timer = self._timer)
         self.cameraWidget = CameraWidget(self.cameraDevice)
         self.cameraRecord = CameraDevice(mirrored=True, record=False, 
@@ -45,14 +47,23 @@ class MaFenetre(QDialog, UiMaFenetre):
         self.lineEdit_2.cursorPositionChanged.connect(self.clearScore)
         self.pushButton_score.clicked.connect(self.addScoreToDict)
         self.pushButton_3.clicked.connect(self.load_scores)
-        self.pushButton_4.clicked.connect(self.deleteMatch)        
+        self.pushButton_5.clicked.connect(self.calculClassement)
         
+        self.treeWidget.__class__.keyPressEvent = self.OnKeyPressed
+        
+
         self.score = score()
         
         self.horizontalLayout.insertWidget(1, self.cameraWidget)
         self.cameraWidget.show()
         self.load_teams()
         self.tour = -1
+        
+        
+    def OnKeyPressed(self, event):
+        key = event.key()
+        if key == Qt.Key_Delete:
+            self.deleteMatch()        
         
     def deleteMatch(self):
         ''' pour supprimer un match s'il a ete ajoute par erreur :
@@ -84,7 +95,9 @@ class MaFenetre(QDialog, UiMaFenetre):
             QMessageBox.information(None, "Attention", 
                     "Une equipe ne peut pas jouer un match contre elle-meme ! \
                     \n Veuillez changer au moins une equipe pour pouvoir enregistrer le match.")
-        elif self.lineEdit.text() == "" or self.lineEdit_2.text() == "" :
+        elif self.lineEdit.text() == "" or self.lineEdit_2.text() == "" or \
+                not str(self.lineEdit.text()).isdigit() or \
+                not str(self.lineEdit_2.text()).isdigit():
             QMessageBox.information(None, "Attention", 
                     "Veuillez entrer le score de chacune des equipes.")
         else:
@@ -192,6 +205,19 @@ class MaFenetre(QDialog, UiMaFenetre):
         self.comboBox.addItems(lines)
         self.comboBox_2.clear()
         self.comboBox_2.addItems(lines)
+        print self.comboBox.count()
+    
+    def calculClassement(self):
+        resultats = {}
+        for num in xrange(self.comboBox.count()):
+            equipe = str(self.comboBox.itemText(num))
+            resultats[equipe] = [0,0]            
+        for tour in self.score.results.keys():
+            for match in self.score.results[tour].keys():
+                for team in self.score.results[tour][match]:
+                    resultats[team][0] += 1
+                    resultats[team][1] += int(self.score.results[tour][match][team])
+        print resultats
 
 
     @pyqtSlot()
