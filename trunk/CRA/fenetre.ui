@@ -22,7 +22,7 @@
    <item row="0" column="1">
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tab">
       <property name="layoutDirection">
@@ -444,16 +444,6 @@
          <attribute name="verticalHeaderHighlightSections">
           <bool>true</bool>
          </attribute>
-         <row>
-          <property name="text">
-           <string>Nouvelle ligne</string>
-          </property>
-         </row>
-         <row>
-          <property name="text">
-           <string>2</string>
-          </property>
-         </row>
          <column>
           <property name="text">
            <string>Rang</string>
@@ -474,13 +464,6 @@
            <string>Nombre matchs joués</string>
           </property>
          </column>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pushButton_5">
-         <property name="text">
-          <string>classement</string>
-         </property>
         </widget>
        </item>
       </layout>

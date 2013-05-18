@@ -6,7 +6,7 @@ Created on Tue Mar 26 22:34:10 2013
 """
 import sys
 import os
-#os.system("pyuic4 fenetre.ui > intGra.py")
+os.system("pyuic4 fenetre.ui > intGra.py")
 
 import json
 
@@ -27,13 +27,12 @@ class MaFenetre(QDialog, UiMaFenetre):
         self.setupUi(conteneur)
         self.pushButton.clicked.connect(self.start_chrono)
         self.pushButton_2.clicked.connect(self.reset)
-        self.duree = 10.0  # la duree en sec
+        self.duree = 90.0  # la duree en sec
         self.lcdNumber.display(str(self.duree))
         self.intervale = 50/1000.0
         self.time = QTime()
         self._timer = QtCore.QTimer(self)
 
-        delKeyPressedSignal = pyqtSignal(QEvent)
 
         self.cameraDevice = CameraDevice(mirrored=True, timer = self._timer)
         self.cameraWidget = CameraWidget(self.cameraDevice)
@@ -47,10 +46,12 @@ class MaFenetre(QDialog, UiMaFenetre):
         self.lineEdit_2.cursorPositionChanged.connect(self.clearScore)
         self.pushButton_score.clicked.connect(self.addScoreToDict)
         self.pushButton_3.clicked.connect(self.load_scores)
-        self.pushButton_5.clicked.connect(self.calculClassement)
         
         self.treeWidget.__class__.keyPressEvent = self.OnKeyPressed
-        
+        self.tableWidget.setEditTriggers(
+                                        QtGui.QAbstractItemView.NoEditTriggers)
+
+
 
         self.score = score()
         
@@ -107,6 +108,7 @@ class MaFenetre(QDialog, UiMaFenetre):
             self.addScoreToWidget()
             # on reinitialise les champs de texte ou entrer les scores            
             self.addMatch()
+            self.calculClassement()
             
         
     def addScoreToWidget(self):
@@ -118,6 +120,7 @@ class MaFenetre(QDialog, UiMaFenetre):
             if not self.treeWidget.topLevelItem(tour-1):
                 newTour = QtGui.QTreeWidgetItem(self.treeWidget)
                 newTour.setText(0, "Tour "+str(tour))
+                self.treeWidget.addTopLevelItem(newTour)                
             self.tour = tour 
         
         teams = QtGui.QTreeWidgetItem()
@@ -148,8 +151,6 @@ class MaFenetre(QDialog, UiMaFenetre):
             res[key] = value
         return res
 
-
-    
     def load_scores(self):
         '''si le programme a été fermé et qu'on le rouvre pendant la coupe,
         charger les scores des matchs qui ont déjà eu lieu avant dans le 
@@ -162,17 +163,21 @@ class MaFenetre(QDialog, UiMaFenetre):
             self.score.results = obj
 #        print self.score.results.keys()
 #        print self.score.results
-        map(self.createTreeWidIt, self.score.results.keys())
+        self.treeWidget.clear()
+        map(self.createTreeWidIt, sorted(self.score.results.keys()))
         #print "nb match charges"+ str(self.score.nb_match)
+        self.calculClassement()
         
     def createTreeWidIt(self, tour):
         '''Quand on load un fichier de scores, on commence par effacer tout
         ce qu'il y a actuellement, puis on cree les item pour chaque match
         '''
-        self.treeWidget.clear()
         newTour = QtGui.QTreeWidgetItem(self.treeWidget)
         newTour.setText(0, "Tour "+str(tour))
-        matchs = sorted(self.score.results[tour].keys())
+        self.treeWidget.addTopLevelItem(newTour)
+        #self.treeWidget.topLevelItem(int(tour)-1).setText(0, "Tour "+str(tour))
+        matchs = sorted(self.score.results[tour].keys(), key = lambda x : int(x))
+        print type(self.treeWidget.topLevelItem(int(tour)-1))
         #print matchs
         for m in matchs:
             teamA, teamB = self.score.results[tour][m].keys()
@@ -217,9 +222,30 @@ class MaFenetre(QDialog, UiMaFenetre):
                 for team in self.score.results[tour][match]:
                     resultats[team][0] += 1
                     resultats[team][1] += int(self.score.results[tour][match][team])
+        self.modifier_classement(resultats)
+        
+    def modifier_classement(self, resultats) :
+        """ ajoute les 
+        """
+        self.tableWidget.clearContents()
         print resultats
+        clef_ordonnees = reversed(sorted(resultats.keys(), 
+                                        key = lambda x: resultats[x][1]))
+        
+        for classement, team in enumerate(clef_ordonnees):
+            nb_match, score_tot = resultats[team]
+            if self.tableWidget.rowCount() <= classement:
+                self.tableWidget.insertRow(classement)
+            for col in range(self.tableWidget.columnCount()):
+                self.tableWidget.setItem(classement, col, 
+                                         QtGui.QTableWidgetItem())
+            self.tableWidget.item(classement, 0).setText(str(classement+1))
+            self.tableWidget.item(classement, 1).setText(str(team))
+            self.tableWidget.item(classement, 2).setText(str(score_tot))
+            self.tableWidget.item(classement, 3).setText(str(nb_match))
 
-
+                        
+            
     @pyqtSlot()
     def reset(self):
         if self.timer.isActive():
@@ -323,10 +349,8 @@ class score :
         self.save_matchs()
                       
 
-
-
 if __name__ == "__main__":
     a = QApplication(sys.argv)
     f = MaFenetre()
-    f.show()
+    f.showFullScreen()
     r = a.exec_()
