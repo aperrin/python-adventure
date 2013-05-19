@@ -1,4 +1,4 @@
-Nom Equipe
+Nom_Equipe
 ClubElek
 Kelebulc
 Tipiak

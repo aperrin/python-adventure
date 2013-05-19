@@ -266,6 +266,9 @@ class MaFenetre(QDialog, UiMaFenetre):
 
     def stopRecord(self) :
         self.cameraRecord.setRecord(False)
+        self.cameraRecord.name = "crade.avi"
+        self.cameraRecord.setRecord(True)
+        self.cameraRecord.setRecord(False)
 
     def create_record_name(self) :
         name = "{0}_vs_{1}_match_1".format(self.comboBox.currentText(), 
@@ -281,14 +284,23 @@ class MaFenetre(QDialog, UiMaFenetre):
 
     @pyqtSlot()
     def start_chrono(self):
-        self.timer.timeout.connect(self.decompte)
-        self.timer.start(self.intervale*1000.0)
-        self.time.start()
-        self.pushButton.setEnabled(False)
-        name_video = self.create_record_name()
-        print 'name_video : {0}'.format(name_video)        
-        self.cameraRecord.name = name_video
-        self.cameraRecord.setRecord(True)
+        if self.comboBox.currentText() == "Nom_Equipe" \
+            or self.comboBox_2.currentText() == "Nom_Equipe":
+            QMessageBox.information(None, "Attention", 
+                    "Veuillez choisir le nom de vos 2 equipes. ")
+        elif self.comboBox.currentText() == self.comboBox_2.currentText():
+             QMessageBox.information(None, "Attention", 
+                    "Une equipe ne peut pas jouer un match contre elle-meme ! \
+                    \n Veuillez changer au moins une equipe pour pouvoir enregistrer le match.")
+        else:
+            self.timer.timeout.connect(self.decompte)
+            self.timer.start(self.intervale*1000.0)
+            self.time.start()
+            self.pushButton.setEnabled(False)
+            name_video = self.create_record_name()
+            print 'name_video : {0}'.format(name_video)        
+            self.cameraRecord.name = name_video
+            self.cameraRecord.setRecord(True)
 
     def decompte(self):
         val = -(self.time.elapsed() - self.duree*1000)
