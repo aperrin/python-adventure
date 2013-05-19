@@ -16,16 +16,6 @@ color:"blue"
 	x : width / 2;
 	y : height / 2;
 
-	source:"./reticule.png"
+        source:"./images/ampoule_eteinte.png"
 
  }
-
-
-     MouseArea {
-	hoverEnabled: true
-         anchors.fill: parent
-         onMousePositionChanged: {souris.x = mouse.x - souris.width / 2, souris.y = mouse.y - souris.height / 2}
-     }
-}
-
-
