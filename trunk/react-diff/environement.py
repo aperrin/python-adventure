@@ -23,24 +23,28 @@ class abstract_environnement(object):
         x, y = xy
         return x, y
 
-    def check_bord(self, x, y):
-        res_y, res_x = True, True
-        if x > self.taille_x or x < 0 :
-            res_x = False
-        if y > self.taille_y or y < 0 :
-            res_y = False
-        return res_x, res_y
+    def dirichlet(self, x, y):
+        if 0 <= y < self.taille_y and 0 <= x < self.taille_x :
+            return x, y, None
+        return x, y, 0
 
     def neumann(self, x, y):
-
+        if y < 0 :
+            pass
+        if y >= self.taille_y:
+            y = self.taille_y - 1
+        if x < 0 :
+            pass
+        if x > self.taille_x:
+            pass
 
     def torique(self, x, y):
-        return x % self.taille_x, y % self.taille_y
+        return x % self.taille_x, y % self.taille_y, None
 
     def __getitem__(self, xy):
         x, y = xy
-
-        return x, y
+        val = None
+        return x, y, val
 
     def __str__(self):
         sep = '-----------------------------'
@@ -65,16 +69,12 @@ class list1d(abstract_environnement):
     def convert_coord(self, x, y):
         return self.taille_y * x + y
 
-    def dirichlet(self, x, y):
-        res = super(list1d, self).dirichlet(x, y)
-        if res == 0 :
-            return 0
-        else :
-            return self.maille[self.convert_coord(x, y)]
-
     def __getitem__(self, xy):
-        x, y = super(list1d, self).__getitem__(xy)
-        return self.maille[self.convert_coord(x, y)]
+        x, y, val = super(list1d, self).__getitem__(xy)
+        if val is None:
+            return self.maille[self.convert_coord(x, y)]
+        else:
+            return val
 
     def __str__(self):
         res = super(list1d, self).__str__()
