@@ -41,11 +41,6 @@ class abstract_environnement(object):
     def torique(self, x, y):
         return x % self.taille_x, y % self.taille_y, None
 
-    def __getitem__(self, xy):
-        x, y = xy
-        val = None
-        return x, y, val
-
     def __str__(self):
         sep = '-----------------------------'
         res = '{}\ntaille : {}x{} -> {}\n'.format(sep,
@@ -70,7 +65,8 @@ class list1d(abstract_environnement):
         return self.taille_y * x + y
 
     def __getitem__(self, xy):
-        x, y, val = super(list1d, self).__getitem__(xy)
+        x, y = xy
+        x, y, val = self.condition_bords(x, y)
         if val is None:
             return self.maille[self.convert_coord(x, y)]
         else:
